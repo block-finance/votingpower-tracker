@@ -19,12 +19,6 @@
 			"path": "github.com/tidwall/match",
 			"revision": "1731857f09b1f38450e2c12409748407822dc6be",
 			"revisionTime": "2017-10-02T07:59:45Z"
-		},
-		{
-			"checksumSHA1": "n4RbujDngcfR89+6gcKdWsIFCyg=",
-			"path": "votingpower-tracker",
-			"revision": "0d80e3a75fce0738950667ad2b0cfc48ff5cf4a9",
-			"revisionTime": "2018-09-19T09:28:07Z"
 		}
 	],
 	"rootPath": "votingpower-tracker"
