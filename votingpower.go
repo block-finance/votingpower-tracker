@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net/http"
@@ -11,23 +12,25 @@ import (
 	"time"
 )
 
-// TODO Make configurable
-const (
-	queryFrequency          = 1 // Number of seconds between data retrieval.
-	url                     = "https://gaia.validator.network/validators"
-	validatorNetworkAddress = "01F78669F9515FD83DF9250F5C0EE143D3DAD65C"
-)
-
 var (
-	ticker = time.NewTicker(queryFrequency * time.Second)
+	url                     string
+	validatorNetworkAddress string
+	ticker                  *time.Ticker
 )
 
 func startDataRetrieval() {
-	// TODO Make configurable
+	url = viper.GetString("url")
+	validatorNetworkAddress = viper.GetString("validatorNetworkAddress")
+	freq := time.Duration(viper.GetDuration("queryFrequency") * time.Second)
+
+	fmt.Println("Query frequency:", freq)
+	ticker = time.NewTicker(freq)
+
 	go func() {
-		for t := range ticker.C {
-			fmt.Println("Tick at", t)
+		for {
 			fmt.Println(retrieveValidatorData())
+
+			<-ticker.C
 		}
 	}()
 }
@@ -66,14 +69,21 @@ func awaitTermination() {
 	ticker.Stop()
 }
 
+func readConfig() {
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	viper.SetConfigType("yaml")
+
+	if err := viper.ReadInConfig(); err != nil {
+		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+	}
+
+	// TODO Ensure all configuration keys exist
+	viper.SetDefault("queryFrequency", 30)
+}
+
 func main() {
-	fmt.Println(" --- Voting power tracker")
-
-	// response, _ := http.Get(url)
-	// buf, _ := ioutil.ReadAll(response.Body)
-	// defer response.Body.Close()
-
-	// fmt.Println(string(buf))
+	readConfig()
 
 	startDataRetrieval()
 	awaitTermination()
