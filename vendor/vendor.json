@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "kRu9U692slQgKnLIsD9wAw5CGSk=",
+			"path": "github.com/buger/jsonparser",
+			"revision": "6acdf747ae99cad92d1e8134606008acaca71844",
+			"revisionTime": "2018-07-24T08:32:21Z"
+		},
+		{
+			"checksumSHA1": "+aq6vfX37dIMIqeWaE5tgf0v3fE=",
+			"path": "github.com/tidwall/gjson",
+			"revision": "1e3f6aeaa5bad08d777ea7807b279a07885dd8b2",
+			"revisionTime": "2018-08-02T15:58:17Z"
+		},
+		{
+			"checksumSHA1": "Tk+aXpWRuTQhURlO79bd7YogcU0=",
+			"path": "github.com/tidwall/match",
+			"revision": "1731857f09b1f38450e2c12409748407822dc6be",
+			"revisionTime": "2017-10-02T07:59:45Z"
+		},
+		{
+			"checksumSHA1": "n4RbujDngcfR89+6gcKdWsIFCyg=",
+			"path": "votingpower-tracker",
+			"revision": "0d80e3a75fce0738950667ad2b0cfc48ff5cf4a9",
+			"revisionTime": "2018-09-19T09:28:07Z"
+		}
+	],
+	"rootPath": "votingpower-tracker"
+}
