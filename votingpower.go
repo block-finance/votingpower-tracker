@@ -2,20 +2,31 @@ package main
 
 import (
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 	"time"
 )
 
 var (
-	url                     string
-	validatorNetworkAddress string
-	ticker                  *time.Ticker
+	url                       string
+	validatorNetworkAddress   string
+	ticker                    *time.Ticker
+	validatorVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		// Namespace: "our_company",
+		// Subsystem: "blob_storage",
+		Name: "validator_voting_power",
+		Help: "Voting power of configured validator",
+	})
+	totalVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+		// Namespace: "our_company",
+		// Subsystem: "blob_storage",
+		Name: "total_voting_power",
+		Help: "Total network voting power",
+	})
 )
 
 func startDataRetrieval() {
@@ -55,18 +66,10 @@ func retrieveValidatorData() (uint64, uint64) {
 		validatorVotingPower = value.Uint()
 	}
 
+	totalVotingPowerGauge.Set(float64(totalVotingPower))
+	validatorVotingPowerGauge.Set(float64(validatorVotingPower))
+
 	return validatorVotingPower, totalVotingPower
-}
-
-// Keep the program open until killed by user.
-// https://gobyexample.com/signals
-func awaitTermination() {
-	sigs := make(chan os.Signal)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-
-	<-sigs
-
-	ticker.Stop()
 }
 
 func readConfig() {
@@ -82,9 +85,16 @@ func readConfig() {
 	viper.SetDefault("queryFrequency", 30)
 }
 
+func init() {
+	// Register the summary and the histogram with Prometheus's default registry.
+	prometheus.MustRegister(validatorVotingPowerGauge)
+	prometheus.MustRegister(totalVotingPowerGauge)
+}
+
 func main() {
 	readConfig()
 
 	startDataRetrieval()
-	awaitTermination()
+	http.Handle("/metrics", promhttp.Handler())
+	http.ListenAndServe(":8080", nil)
 }
