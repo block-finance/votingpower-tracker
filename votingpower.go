@@ -18,15 +18,21 @@ var (
 	validatorVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
-		Name: "validator_voting_power",
+		Name: "gaia_validator_voting_power",
 		Help: "Voting power of configured validator",
 	})
 	totalVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
-		Name: "total_voting_power",
+		Name: "gaia_total_voting_power",
 		Help: "Total network voting power",
 	})
+	individualVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		// Namespace: "our_company",
+		// Subsystem: "blob_storage",
+		Name: "gaia_validators_voting_power",
+		Help: "Voting power of each validator",
+	}, []string{"address"})
 )
 
 func startDataRetrieval() {
@@ -78,6 +84,16 @@ func retrieveValidatorData() {
 
 	totalVotingPowerGauge.Set(float64(totalVotingPower))
 	validatorVotingPowerGauge.Set(float64(validatorVotingPower))
+
+	{
+		value := gjson.GetBytes(responseBody, "result.validators")
+		for _, v := range value.Array() {
+			address := v.Get("address").String()
+			votingPower := v.Get("voting_power").Uint()
+			//  hdFailures.With(prometheus.Labels{"device":"/dev/sda"}).Inc()
+			individualVotingPowerGauge.With(prometheus.Labels{"address": address}).Set(float64(votingPower))
+		}
+	}
 }
 
 func readConfig() {
@@ -97,6 +113,7 @@ func init() {
 	// Register the summary and the histogram with Prometheus's default registry.
 	prometheus.MustRegister(validatorVotingPowerGauge)
 	prometheus.MustRegister(totalVotingPowerGauge)
+	prometheus.MustRegister(individualVotingPowerGauge)
 }
 
 func main() {
