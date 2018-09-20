@@ -39,16 +39,26 @@ func startDataRetrieval() {
 
 	go func() {
 		for {
-			fmt.Println(retrieveValidatorData())
+			retrieveValidatorData()
 
 			<-ticker.C
 		}
 	}()
 }
 
-func retrieveValidatorData() (uint64, uint64) {
-	response, _ := http.Get(url)
-	responseBody, _ := ioutil.ReadAll(response.Body)
+func retrieveValidatorData() {
+	response, err := http.Get(url)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	defer response.Body.Close()
 
 	var totalVotingPower, validatorVotingPower uint64
@@ -68,8 +78,6 @@ func retrieveValidatorData() (uint64, uint64) {
 
 	totalVotingPowerGauge.Set(float64(totalVotingPower))
 	validatorVotingPowerGauge.Set(float64(validatorVotingPower))
-
-	return validatorVotingPower, totalVotingPower
 }
 
 func readConfig() {
