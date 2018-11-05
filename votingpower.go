@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"time"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"github.com/tidwall/gjson"
-	"io/ioutil"
-	"net/http"
-	"time"
 )
 
 var (
@@ -53,7 +54,11 @@ func startDataRetrieval() {
 }
 
 func retrieveValidatorData() {
-	response, err := http.Get(url)
+	client := http.Client{
+		Timeout: time.Duration(time.Second),
+	}
+
+	response, err := client.Get(url)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -102,7 +107,7 @@ func readConfig() {
 	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		panic(fmt.Errorf("Fatal error config file: %s \n", err))
+		panic(fmt.Errorf("fatal error config file: %s", err))
 	}
 
 	// TODO Ensure all configuration keys exist
