@@ -13,52 +13,85 @@ import (
 )
 
 var (
-	url                       string
-	validatorNetworkAddress   string
-	ticker                    *time.Ticker
-	validatorVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+	validatorNetworkAddress string
+	ticker                  *time.Ticker
+	network                 string
+
+	validatorVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
 		Name: "gaia_validator_voting_power",
 		Help: "Voting power of configured validator",
-	})
-	totalVotingPowerGauge = prometheus.NewGauge(prometheus.GaugeOpts{
+	}, []string{"chainID"})
+	totalVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
 		Name: "gaia_total_voting_power",
 		Help: "Total network voting power",
-	})
+	}, []string{"chainID"})
 	individualVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
 		Name: "gaia_validators_voting_power",
 		Help: "Voting power of each validator",
-	}, []string{"address"})
+	}, []string{"address", "chainID"})
 )
 
 func startDataRetrieval() {
-	url = viper.GetString("url")
+	baseURL := viper.GetString("baseURL")
+	validatorsURLEndpoint := baseURL + "/validators"
+	statusURLEndpoint := baseURL + "/status"
+
 	validatorNetworkAddress = viper.GetString("validatorNetworkAddress")
 	freq := time.Duration(viper.GetDuration("queryFrequency") * time.Second)
-
 	fmt.Println("Query frequency:", freq)
+
 	ticker = time.NewTicker(freq)
+
+	// Retrieve chain-id
+	chainID, err := getChainID(statusURLEndpoint)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Chain-ID:", chainID)
 
 	go func() {
 		for {
-			retrieveValidatorData()
+			retrieveValidatorData(validatorsURLEndpoint, chainID)
 
 			<-ticker.C
 		}
 	}()
 }
 
-func retrieveValidatorData() {
+func getChainID(statusURLEndpoint string) (string, error) {
 	client := http.Client{
 		Timeout: time.Duration(time.Second),
 	}
 
-	response, err := client.Get(url)
+	response, err := client.Get(statusURLEndpoint)
+	if err != nil {
+		return "", err
+	}
+
+	responseBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	defer response.Body.Close()
+
+	value := gjson.GetBytes(responseBody, "result.node_info.network")
+	return value.Str, nil
+}
+
+func retrieveValidatorData(validatorsURLEndpoint, chainID string) {
+	client := http.Client{
+		Timeout: time.Duration(time.Second),
+	}
+
+	response, err := client.Get(validatorsURLEndpoint)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -87,16 +120,18 @@ func retrieveValidatorData() {
 		validatorVotingPower = value.Uint()
 	}
 
-	totalVotingPowerGauge.Set(float64(totalVotingPower))
-	validatorVotingPowerGauge.Set(float64(validatorVotingPower))
+	labels := prometheus.Labels{"chainID": chainID}
+	totalVotingPowerGauge.With(labels).Set(float64(totalVotingPower))
+	validatorVotingPowerGauge.With(labels).Set(float64(validatorVotingPower))
 
 	{
 		value := gjson.GetBytes(responseBody, "result.validators")
 		for _, v := range value.Array() {
 			address := v.Get("address").String()
 			votingPower := v.Get("voting_power").Uint()
-			//  hdFailures.With(prometheus.Labels{"device":"/dev/sda"}).Inc()
-			individualVotingPowerGauge.With(prometheus.Labels{"address": address}).Set(float64(votingPower))
+
+			labels["address"] = address
+			individualVotingPowerGauge.With(labels).Set(float64(votingPower))
 		}
 	}
 }

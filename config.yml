@@ -1,4 +1,4 @@
 # Server polling frequency in seconds
 queryFrequency: 10
-url: https://gaia.validator.network/validators
+baseURL: http://gos.validator.network:26657/
 validatorNetworkAddress: 01F78669F9515FD83DF9250F5C0EE143D3DAD65C
