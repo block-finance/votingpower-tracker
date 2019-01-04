@@ -13,17 +13,10 @@ import (
 )
 
 var (
-	validatorNetworkAddress string
-	ticker                  *time.Ticker
-	network                 string
-	prometheusURL           string
+	ticker        *time.Ticker
+	network       string
+	prometheusURL string
 
-	validatorVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		// Namespace: "our_company",
-		// Subsystem: "blob_storage",
-		Name: "gaia_validator_voting_power",
-		Help: "Voting power of configured validator",
-	}, []string{"chainID"})
 	totalVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		// Namespace: "our_company",
 		// Subsystem: "blob_storage",
@@ -43,7 +36,6 @@ func startDataRetrieval() {
 	validatorsURLEndpoint := baseURL + "/validators"
 	statusURLEndpoint := baseURL + "/status"
 
-	validatorNetworkAddress = viper.GetString("validatorNetworkAddress")
 	freq := time.Duration(viper.GetDuration("queryFrequency") * time.Second)
 	fmt.Println("Query frequency:", freq)
 
@@ -106,7 +98,7 @@ func retrieveValidatorData(validatorsURLEndpoint, chainID string) {
 
 	defer response.Body.Close()
 
-	var totalVotingPower, validatorVotingPower uint64
+	var totalVotingPower uint64
 
 	{
 		value := gjson.GetBytes(responseBody, "result.validators.#.voting_power")
@@ -115,15 +107,8 @@ func retrieveValidatorData(validatorsURLEndpoint, chainID string) {
 		}
 	}
 
-	{
-		query := fmt.Sprintf(`result.validators.#[address="%v"].voting_power`, validatorNetworkAddress)
-		value := gjson.GetBytes(responseBody, query)
-		validatorVotingPower = value.Uint()
-	}
-
 	labels := prometheus.Labels{"chainID": chainID}
 	totalVotingPowerGauge.With(labels).Set(float64(totalVotingPower))
-	validatorVotingPowerGauge.With(labels).Set(float64(validatorVotingPower))
 
 	{
 		value := gjson.GetBytes(responseBody, "result.validators")
@@ -154,8 +139,6 @@ func readConfig() {
 }
 
 func init() {
-	// Register the summary and the histogram with Prometheus's default registry.
-	prometheus.MustRegister(validatorVotingPowerGauge)
 	prometheus.MustRegister(totalVotingPowerGauge)
 	prometheus.MustRegister(individualVotingPowerGauge)
 }
