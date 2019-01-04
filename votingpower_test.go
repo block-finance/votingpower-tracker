@@ -45,6 +45,17 @@ func TestGJSON(t *testing.T) {
 		fmt.Println(value)
 	}
 
+	{
+		fmt.Println(" --- ")
+
+		value := gjson.GetBytes(testJSON, "result.validators")
+		fmt.Println(value.Type)
+		for _, v := range value.Array() {
+			address := v.Get("address").String()
+			votingPower := v.Get("voting_power").Uint()
+			fmt.Println(address, votingPower)
+		}
+	}
 }
 
 func TestJSON(t *testing.T) {
