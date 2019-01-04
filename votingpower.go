@@ -16,6 +16,7 @@ var (
 	validatorNetworkAddress string
 	ticker                  *time.Ticker
 	network                 string
+	prometheusURL           string
 
 	validatorVotingPowerGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		// Namespace: "our_company",
@@ -147,6 +148,9 @@ func readConfig() {
 
 	// TODO Ensure all configuration keys exist
 	viper.SetDefault("queryFrequency", 30)
+	viper.SetDefault("prometheusURL", "[::]:26662")
+
+	prometheusURL = viper.GetString("prometheusURL")
 }
 
 func init() {
@@ -161,5 +165,9 @@ func main() {
 
 	startDataRetrieval()
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe("localhost:8080", nil)
+	fmt.Println("Prometheus listening endpoint:", prometheusURL)
+	err := http.ListenAndServe(prometheusURL, nil)
+	if err != nil {
+		panic(err)
+	}
 }
