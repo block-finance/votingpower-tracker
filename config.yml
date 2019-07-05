@@ -1,4 +1,4 @@
 # Server polling frequency in seconds
 queryFrequency: 10
-baseURL: http://gos.validator.network:26657/
+baseURL: https://cosmoshub.validator.network:443
 # prometheusURL: 0.0.0.0:8080 # Defaults to [::]:26662
